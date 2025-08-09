@@ -29,6 +29,10 @@ body {
     max-height: 75vh;
 }
 
+#input .upload {
+    max-height: 85vh;
+}
+
 @media (max-height: 650px) {
     body {
         overflow-y: scroll;
