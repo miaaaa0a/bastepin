@@ -42,7 +42,7 @@ pub fn read_into_hashmap() -> Result<HashMap<String, String>, Box<dyn Error>>{
     Ok(hashmap)
 }
 
-pub fn write(content: String) -> Result<String, Box<dyn Error>> {
+pub fn write(content: &String) -> Result<String, Box<dyn Error>> {
     let seed = SystemTime::now().duration_since(UNIX_EPOCH).expect("eated the time").as_secs();
     let hash = XxHash3_64::oneshot_with_seed(seed, content.as_bytes());
     let mut storage = OpenOptions::new()
@@ -51,6 +51,6 @@ pub fn write(content: String) -> Result<String, Box<dyn Error>> {
         .open("./storage")
         .unwrap();
 
-    writeln!(storage, "{}:{},", hash, content)?;
+    write!(storage, "{}:{},", hash, content)?;
     Ok(hash.to_string())
 }
