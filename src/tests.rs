@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use std::time::Instant;
     use crate::*;
 
     #[test]
@@ -11,5 +12,31 @@ mod tests {
         let hm = storage::read_into_hashmap().unwrap();
         let result = hm.get(&hash).unwrap();
         assert_eq!(encoded, *result);
+    }
+
+    #[test]
+    fn test_speed() {
+        let onemb = std::fs::read_to_string("1mb.txt").unwrap();
+        const TESTSIZE: i32 = 1_048_576;
+
+        // writing
+        let write_now = Instant::now();
+        let mut hashes = Vec::with_capacity(50);
+        for _ in 0..50 {
+            let encoded = encoding::encode(&onemb).unwrap();
+            let hash = storage::write(&encoded).unwrap();
+            hashes.push(hash);
+        }
+        let write_time = write_now.elapsed().as_millis();
+
+        // reading
+        let read_now = Instant::now();
+        let hm = storage::read_into_hashmap().unwrap();
+        for h in hashes {
+            let _ = hm.get(&h).unwrap();
+        }
+        let read_time = read_now.elapsed().as_millis();
+
+        println!("WRITE TIME: {}ms\nREAD TIME: {}ms\n\n", write_time, read_time);
     }
 }
