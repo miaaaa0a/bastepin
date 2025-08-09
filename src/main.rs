@@ -1,15 +1,27 @@
 use std::error::Error;
+use askama::Template;
 use serde::{Deserialize, Serialize};
 use tower_http::services::ServeDir;
 use axum::{
-    extract::{self, Path}, routing::{get, post}, Json, Router
+    extract::{self, Path}, response::Html, routing::{get, post}, Json, Router
 };
-use tracing::info;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Response {
     code: u16,
     content: String
+}
+
+#[derive(Template)]
+#[template(path = "upload.html")]
+struct UploadTemplate {
+    content: String
+}
+
+macro_rules! html {
+    ($p: expr) => {
+        std::fs::read_to_string($p).unwrap()
+    };
 }
 
 pub mod storage;
@@ -32,14 +44,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[axum::debug_handler]
-async fn get_by_hash(Path(hash): Path<String>) -> Json<Response> {
+async fn get_by_hash(Path(hash): Path<String>) -> Html<String> {
     let hm = storage::read_into_hashmap().unwrap();
     let result = hm.get(&hash);
-    info!("{}", hash);
-    info!("{:?}", result);
-    match result {
+    /*match result {
         Some(content) => Json(Response { code: 200, content: content.to_string() }),
         None => Json(Response { code: 404, content: "".to_string() })
+    }*/
+    if let Some(x) = result {
+        let html = UploadTemplate { content: x.to_string() };
+        Html(html.render().unwrap())
+    } else {
+        Html(html!("./templates/error.html"))
     }
 }
 
