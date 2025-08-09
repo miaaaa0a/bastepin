@@ -1,10 +1,12 @@
-window.onload = () => {
+window.onload = async () => {
     let content = document.getElementById("input");
 
-    let decoded = window.atob(content.innerText);
-    let blob = new Blob([decoded], { type : 'plain/text' });
+    let decoded = Uint8Array.from(atob(content.innerHTML), c => c.charCodeAt(0));
+    let blob = new Blob([decoded], { type : 'application/octet-stream' });
     const ds = new DecompressionStream("deflate");
     let stream = blob.stream().pipeThrough(ds);
 
-    content.innerText = stream;
+    const response = new Response(stream);
+    let text = await response.text();
+    content.innerHTML = text.replaceAll("\n", "&#13;&#10;")
 };
