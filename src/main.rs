@@ -14,6 +14,7 @@ struct Response {
 
 pub mod storage;
 pub mod encoding;
+pub mod tests;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -44,8 +45,8 @@ async fn get_by_hash(Path(hash): Path<String>) -> Json<Response> {
 
 #[axum::debug_handler]
 async fn upload(extract::Json(payload): extract::Json<Response>) -> Json<Response> {
-    let encoded = encoding::encode(payload.content).unwrap();
-    let result = storage::write(encoded);
+    let encoded = encoding::encode(&payload.content).unwrap();
+    let result = storage::write(&encoded);
     match result {
         Ok(h) => Json(Response{ code: 200, content: h }),
         Err(e) => Json(Response{ code: 502, content: format!("error while writing to db: {:?}", e) })
