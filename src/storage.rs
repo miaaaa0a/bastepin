@@ -8,7 +8,16 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 use twox_hash::XxHash3_64;
 
+fn check_for_storage() -> Result<(), Box<dyn Error>> {
+    if !std::fs::exists("./storage").unwrap() {
+        std::fs::write("./storage", "")?;
+    }
+    Ok(())
+}
+
 pub fn read_into_hashmap() -> Result<HashMap<String, String>, Box<dyn Error>>{
+    check_for_storage()?;
+
     let buf = BufReader::new(File::open("./storage")?);
     let mut key_buf = Vec::with_capacity(64);
     let mut content_buf = Vec::with_capacity(10240);
@@ -43,6 +52,8 @@ pub fn read_into_hashmap() -> Result<HashMap<String, String>, Box<dyn Error>>{
 }
 
 pub fn write(content: &String) -> Result<String, Box<dyn Error>> {
+    check_for_storage()?;
+    
     let seed = SystemTime::now().duration_since(UNIX_EPOCH).expect("eated the time").as_secs();
     let hash = XxHash3_64::oneshot_with_seed(seed, content.as_bytes());
     let mut storage = OpenOptions::new()
