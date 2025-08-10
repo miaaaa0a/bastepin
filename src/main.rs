@@ -3,7 +3,7 @@ use askama::Template;
 use serde::{Deserialize, Serialize};
 use tower_http::services::ServeDir;
 use axum::{
-    extract::{self, Path}, response::Html, routing::{get, post}, Json, Router
+    body::HttpBody, extract::{self, DefaultBodyLimit, Path}, response::Html, routing::{get, post}, Json, Router
 };
 use dotenv::dotenv;
 
@@ -29,6 +29,8 @@ pub mod storage;
 pub mod encoding;
 pub mod tests;
 
+const UPLOAD_LIMIT: usize = 1_048_576;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt::init();
@@ -38,7 +40,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let app = Router::new()
         .route("/api/upload", post(upload))
         .route("/{hash}", get(get_by_hash))
-        .fallback_service(static_web);
+        .fallback_service(static_web)
+        .layer(DefaultBodyLimit::disable());
     
     let listener = tokio::net::TcpListener::bind("0.0.0.0:2763").await?;
     axum::serve(listener, app).await?;
@@ -63,6 +66,10 @@ async fn get_by_hash(Path(hash): Path<String>) -> Html<String> {
 
 #[axum::debug_handler]
 async fn upload(extract::Json(payload): extract::Json<Response>) -> Json<Response> {
+    if payload.content.len() > UPLOAD_LIMIT {
+        return Json(Response{ code: 413, content: format!("upload too big! {} >>> {} bytes", payload.content.len(), UPLOAD_LIMIT) })
+    }
+
     let encoded = encoding::encode(&payload.content).unwrap();
     let result = storage::write(&encoded);
     match result {
