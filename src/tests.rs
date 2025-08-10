@@ -5,6 +5,11 @@ mod tests {
 
     #[test]
     fn test_rw_storage() {
+        // this should be okay even if unsafe since we are running a test
+        unsafe {
+            std::env::set_var("STORAGE_PATH", "./teststorage");
+        }
+
         let test_string = String::from("haiiiiiii :3!!!");
         let encoded = encoding::encode(&test_string).unwrap();
         let hash = storage::write(&encoded).unwrap();
@@ -16,6 +21,12 @@ mod tests {
 
     #[test]
     fn test_speed() {
+        // this should be okay even if unsafe since we are running a test
+        unsafe {
+            std::env::set_var("STORAGE_PATH", "./teststorage");
+        }
+        std::fs::remove_file("./teststorage").unwrap();
+
         let onemb = std::fs::read_to_string("1mb.txt").unwrap();
         const TESTSIZE: f32 = 52_428_800.0;
 

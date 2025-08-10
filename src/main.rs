@@ -5,6 +5,7 @@ use tower_http::services::ServeDir;
 use axum::{
     extract::{self, Path}, response::Html, routing::{get, post}, Json, Router
 };
+use dotenv::dotenv;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Response {
@@ -31,6 +32,7 @@ pub mod tests;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt::init();
+    dotenv()?;
     
     let static_web = ServeDir::new("./web");
     let app = Router::new()
