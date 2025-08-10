@@ -17,7 +17,7 @@ mod tests {
     #[test]
     fn test_speed() {
         let onemb = std::fs::read_to_string("1mb.txt").unwrap();
-        const TESTSIZE: i32 = 1_048_576;
+        const TESTSIZE: f32 = 52_428_800.0;
 
         // writing
         let write_now = Instant::now();
@@ -37,6 +37,8 @@ mod tests {
         }
         let read_time = read_now.elapsed().as_millis();
 
-        println!("WRITE TIME: {}ms\nREAD TIME: {}ms\n\n", write_time, read_time);
+        let rw_speed = (( TESTSIZE / read_time as f32 ) + ( TESTSIZE / write_time as f32 )) / 2.0;
+
+        println!("WRITE TIME: {}ms\nREAD TIME: {}ms\n---\nAVG READ/WRITE SPEED: {} bytes/ms", write_time, read_time, rw_speed);
     }
 }
