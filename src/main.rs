@@ -1,14 +1,12 @@
 use askama::Template;
 use axum::{
-    Json, Router,
-    extract::{self, DefaultBodyLimit, Path},
-    response::Html,
-    routing::{get, post},
+    extract::{self, DefaultBodyLimit, Path, State}, response::Html, routing::{get, post}, Json, Router
 };
-use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tower_http::services::ServeDir;
+
+use crate::storage::Storage;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Response {
@@ -33,16 +31,19 @@ pub mod storage;
 pub mod tests;
 
 const UPLOAD_LIMIT: usize = 1_048_576;
+const DB_PATH: &str = "./storage";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt::init();
-    dotenv()?;
 
+    let state = Storage::new(DB_PATH);
+    
     let static_web = ServeDir::new("./web");
     let app = Router::new()
         .route("/api/upload", post(upload))
         .route("/{hash}", get(get_by_hash))
+        .with_state(state)
         .fallback_service(static_web)
         .layer(DefaultBodyLimit::disable());
 
@@ -52,13 +53,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[axum::debug_handler]
-async fn get_by_hash(Path(hash): Path<String>) -> Html<String> {
-    let hm = storage::read_into_hashmap().unwrap();
-    let result = hm.get(&hash);
-    /*match result {
-        Some(content) => Json(Response { code: 200, content: content.to_string() }),
-        None => Json(Response { code: 404, content: "".to_string() })
-    }*/
+async fn get_by_hash(State(state): State<Storage>, Path(hash): Path<String>) -> Html<String> {
+    let result = state.get(hash);
+
     if let Ok(Some(x)) = result {
         let content = str::from_utf8(&x).unwrap();
         let html = UploadTemplate {
@@ -71,7 +68,7 @@ async fn get_by_hash(Path(hash): Path<String>) -> Html<String> {
 }
 
 #[axum::debug_handler]
-async fn upload(extract::Json(payload): extract::Json<Response>) -> Json<Response> {
+async fn upload(State(state): State<Storage>, extract::Json(payload): extract::Json<Response>) -> Json<Response> {
     if payload.content.len() > UPLOAD_LIMIT {
         return Json(Response {
             code: 413,
@@ -84,7 +81,7 @@ async fn upload(extract::Json(payload): extract::Json<Response>) -> Json<Respons
     }
 
     let encoded = encoding::encode(&payload.content).unwrap();
-    let result = storage::write(&encoded);
+    let result = state.write(&encoded);
     match result {
         Ok(h) => Json(Response {
             code: 200,
