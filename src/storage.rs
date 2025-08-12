@@ -6,14 +6,13 @@ use std::time::UNIX_EPOCH;
 
 #[derive(Clone)]
 pub struct Storage {
-    pub db: sled::Db
+    pub db: sled::Db,
 }
 impl Storage {
     pub fn new(path: &str) -> Self {
-        let db = sled::open(path).expect("sled should be able to open/create a database at this path");
-        Self {
-            db: db
-        }
+        let db =
+            sled::open(path).expect("sled should be able to open/create a database at this path");
+        Self { db }
     }
 
     pub fn get(&self, k: String) -> Result<Option<IVec>, Box<dyn Error>> {
@@ -30,5 +29,3 @@ impl Storage {
         Ok(encoded)
     }
 }
-
-

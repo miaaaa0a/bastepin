@@ -7,7 +7,7 @@ use flate2::write::ZlibEncoder;
 
 pub fn encode(content: &String) -> Result<String, Box<dyn Error>> {
     let mut e = ZlibEncoder::new(Vec::new(), Compression::fast());
-    e.write(content.as_bytes())?;
+    e.write_all(content.as_bytes())?;
     let compressed = e.finish()?;
 
     let encoded = STANDARD.encode(compressed);

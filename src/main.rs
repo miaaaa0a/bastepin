@@ -1,6 +1,9 @@
 use askama::Template;
 use axum::{
-    extract::{self, DefaultBodyLimit, Path, State}, response::Html, routing::{get, post}, Json, Router
+    Json, Router,
+    extract::{self, DefaultBodyLimit, Path, State},
+    response::Html,
+    routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -38,7 +41,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt::init();
 
     let state = Storage::new(DB_PATH);
-    
+
     let static_web = ServeDir::new("./web");
     let app = Router::new()
         .route("/api/upload", post(upload))
@@ -68,7 +71,10 @@ async fn get_by_hash(State(state): State<Storage>, Path(hash): Path<String>) -> 
 }
 
 #[axum::debug_handler]
-async fn upload(State(state): State<Storage>, extract::Json(payload): extract::Json<Response>) -> Json<Response> {
+async fn upload(
+    State(state): State<Storage>,
+    extract::Json(payload): extract::Json<Response>,
+) -> Json<Response> {
     if payload.content.len() > UPLOAD_LIMIT {
         return Json(Response {
             code: 413,

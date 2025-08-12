@@ -1,17 +1,17 @@
 #[cfg(test)]
 mod tests {
     use crate::*;
-    use std::time::Instant;
     use std::sync::{LazyLock, Mutex, MutexGuard};
+    use std::time::Instant;
 
     static DB_PATH: &str = "./teststorage";
-    static STORAGE: LazyLock<Mutex<Storage>> = LazyLock::new(|| { Storage::new(DB_PATH).into() });
+    static STORAGE: LazyLock<Mutex<Storage>> = LazyLock::new(|| Storage::new(DB_PATH).into());
 
     #[test]
     fn test_rw_storage() {
         // this should be okay even if unsafe since we are running a test
         let db = &*STORAGE.lock().unwrap();
-        
+
         let test_string = String::from("haiiiiiii :3!!!");
         let encoded = encoding::encode(&test_string).unwrap();
         let hash = db.write(&encoded).unwrap();
