@@ -6,7 +6,7 @@ use std::io::BufReader;
 use std::io::{Read, Write};
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
-use twox_hash::XxHash3_64;
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 
 fn check_for_storage() -> Result<String, Box<dyn Error>> {
     let path = std::env::var("STORAGE_PATH")?;
@@ -54,15 +54,19 @@ pub fn read_into_hashmap() -> Result<HashMap<String, String>, Box<dyn Error>>{
 
 pub fn write(content: &String) -> Result<String, Box<dyn Error>> {
     let storage = check_for_storage()?;
+    
+    let salt = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+    let hash = blake3::hash(
+        format!("{}{}", content, salt).as_bytes()
+    );
+    let encoded = STANDARD.encode(hash.to_hex().to_string());
 
-    let seed = SystemTime::now().duration_since(UNIX_EPOCH).expect("eated the time").as_secs();
-    let hash = XxHash3_64::oneshot_with_seed(seed, content.as_bytes());
     let mut storage = OpenOptions::new()
         .write(true)
         .append(true)
         .open(storage)
         .unwrap();
 
-    write!(storage, "{}:{},", hash, content)?;
-    Ok(hash.to_string())
+    write!(storage, "{}:{},", encoded, content)?;
+    Ok(encoded)
 }
