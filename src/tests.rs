@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use std::time::Instant;
     use crate::*;
+    use std::time::Instant;
 
     #[test]
     fn test_rw_storage() {
@@ -15,8 +15,9 @@ mod tests {
         let hash = storage::write(&encoded).unwrap();
 
         let hm = storage::read_into_hashmap().unwrap();
-        let result = hm.get(&hash).unwrap();
-        assert_eq!(encoded, *result);
+        let result = hm.get(&hash).unwrap().unwrap();
+        let string = std::str::from_utf8(&result).unwrap();
+        assert_eq!(&encoded, string);
     }
 
     #[test]
@@ -47,9 +48,12 @@ mod tests {
         }
         let read_time = read_now.elapsed().as_millis();
 
-        let rw_speed = (( TESTSIZE / read_time as f32 ) + ( TESTSIZE / write_time as f32 )) / 2.0;
+        let rw_speed = ((TESTSIZE / read_time as f32) + (TESTSIZE / write_time as f32)) / 2.0;
 
-        println!("WRITE TIME: {}ms\nREAD TIME: {}ms\n---\nAVG READ/WRITE SPEED: {} bytes/ms", write_time, read_time, rw_speed);
+        println!(
+            "WRITE TIME: {}ms\nREAD TIME: {}ms\n---\nAVG READ/WRITE SPEED: {} bytes/ms",
+            write_time, read_time, rw_speed
+        );
         std::fs::remove_file("./teststorage").unwrap();
     }
 }
