@@ -16,10 +16,11 @@ fn check_for_storage() -> Result<String, Box<dyn Error>> {
     Ok(path)
 }
 
-pub fn read_into_hashmap() -> Result<HashMap<String, String>, Box<dyn Error>>{
-    let storage = check_for_storage()?;
+pub fn read_into_hashmap() -> Result<sled::Db, Box<dyn Error>>{
+    //let storage = check_for_storage()?;
+    let hashmap: sled::Db = sled::open("storage")?;
 
-    let buf = BufReader::new(File::open(storage)?);
+    /*let buf = BufReader::new(File::open(storage)?);
     let mut key_buf = Vec::with_capacity(64);
     let mut content_buf = Vec::with_capacity(10240);
     let mut reading_content = false;
@@ -47,13 +48,14 @@ pub fn read_into_hashmap() -> Result<HashMap<String, String>, Box<dyn Error>>{
             },
             Err(e) => panic!("error while reading storage: {:?}", e)
         }
-    }
+    }*/
 
     Ok(hashmap)
 }
 
 pub fn write(content: &String) -> Result<String, Box<dyn Error>> {
-    let storage = check_for_storage()?;
+    //let storage = check_for_storage()?;
+    let db: sled::Db = sled::open("storage")?;
     
     let salt = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
     let hash = blake3::hash(
@@ -61,12 +63,14 @@ pub fn write(content: &String) -> Result<String, Box<dyn Error>> {
     );
     let encoded = STANDARD.encode(hash.to_hex().to_string());
 
-    let mut storage = OpenOptions::new()
+    /*let mut storage = OpenOptions::new()
         .write(true)
         .append(true)
         .open(storage)
         .unwrap();
 
-    write!(storage, "{}:{},", encoded, content)?;
+    write!(storage, "{}:{},", encoded, content)?;*/
+    db.insert(&encoded, content.as_bytes())?;
+
     Ok(encoded)
 }

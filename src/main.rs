@@ -56,8 +56,9 @@ async fn get_by_hash(Path(hash): Path<String>) -> Html<String> {
         Some(content) => Json(Response { code: 200, content: content.to_string() }),
         None => Json(Response { code: 404, content: "".to_string() })
     }*/
-    if let Some(x) = result {
-        let html = UploadTemplate { content: x.to_string() };
+    if let Ok(Some(x)) = result {
+        let content = str::from_utf8(&x).unwrap();
+        let html = UploadTemplate { content: content.to_string() };
         Html(html.render().unwrap())
     } else {
         Html(html!("./templates/error.html"))
