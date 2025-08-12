@@ -25,7 +25,6 @@ mod tests {
         unsafe {
             std::env::set_var("STORAGE_PATH", "./teststorage");
         }
-        std::fs::remove_file("./teststorage").unwrap();
 
         let onemb = std::fs::read_to_string("1mb.txt").unwrap();
         const TESTSIZE: f32 = 52_428_800.0;
@@ -51,5 +50,6 @@ mod tests {
         let rw_speed = (( TESTSIZE / read_time as f32 ) + ( TESTSIZE / write_time as f32 )) / 2.0;
 
         println!("WRITE TIME: {}ms\nREAD TIME: {}ms\n---\nAVG READ/WRITE SPEED: {} bytes/ms", write_time, read_time, rw_speed);
+        std::fs::remove_file("./teststorage").unwrap();
     }
 }
