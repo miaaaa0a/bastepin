@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::*;
-    use std::sync::{LazyLock, Mutex};
+    use std::sync::{LazyLock, Mutex, PoisonError};
     use std::time::Instant;
 
     static DB_PATH: &str = "./teststorage";
@@ -9,7 +9,6 @@ mod tests {
 
     #[test]
     fn test_rw_storage() {
-        // this should be okay even if unsafe since we are running a test
         let db = &*STORAGE.lock().unwrap();
 
         let test_string = String::from("haiiiiiii :3!!!");
@@ -23,8 +22,7 @@ mod tests {
 
     #[test]
     fn test_speed() {
-        // this should be okay even if unsafe since we are running a test
-        let db = &*STORAGE.lock().unwrap();
+        let db = &*STORAGE.lock().unwrap_or_else(PoisonError::into_inner);
 
         let onemb = std::fs::read_to_string("1mb.txt").unwrap();
         const TESTSIZE: f32 = 52_428_800.0;
