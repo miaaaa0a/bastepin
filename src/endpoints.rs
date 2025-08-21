@@ -1,12 +1,12 @@
+use crate::{encoding, storage::Storage};
 use askama::Template;
 use axum::{
-    extract::{self, Path, State}, http::StatusCode, response::{Html, IntoResponse}, Json
+    Json,
+    extract::{self, Path, State},
+    http::StatusCode,
+    response::{Html, IntoResponse},
 };
 use serde::{Deserialize, Serialize};
-use crate::{
-    storage::Storage,
-    encoding
-};
 
 macro_rules! html {
     ($p: expr) => {
@@ -29,14 +29,25 @@ struct UploadTemplate {
 #[derive(Debug)]
 pub enum AppError {
     Read,
-    Write
+    Write,
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            AppError::Read => (StatusCode::INTERNAL_SERVER_ERROR, Html(html!("./templates/error.html"))).into_response(),
-            AppError::Write => (StatusCode::INTERNAL_SERVER_ERROR, Json(Response { code: 500, content: "error while writing".to_string()})).into_response()
+            AppError::Read => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Html(html!("./templates/error.html")),
+            )
+                .into_response(),
+            AppError::Write => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(Response {
+                    code: 500,
+                    content: "error while writing".to_string(),
+                }),
+            )
+                .into_response(),
         }
     }
 }
@@ -45,7 +56,10 @@ const UPLOAD_LIMIT: usize = 1_048_576;
 pub const DB_PATH: &str = "./storage";
 
 #[axum::debug_handler]
-pub async fn get_by_hash(State(state): State<Storage>, Path(hash): Path<String>) -> Result<Html<String>, AppError> {
+pub async fn get_by_hash(
+    State(state): State<Storage>,
+    Path(hash): Path<String>,
+) -> Result<Html<String>, AppError> {
     let result = state.get(hash).map_err(|_e| AppError::Read)?;
 
     if let Some(x) = result {

@@ -1,18 +1,15 @@
-use std::error::Error;
-use tower_http::services::ServeDir;
+use crate::{endpoints::DB_PATH, storage::Storage};
 use axum::{
     Router,
     extract::DefaultBodyLimit,
-    routing::{get, post}
+    routing::{get, post},
 };
-use crate::{
-    storage::Storage,
-    endpoints::DB_PATH
-};
+use std::error::Error;
+use tower_http::services::ServeDir;
 pub mod encoding;
+pub mod endpoints;
 pub mod storage;
 pub mod tests;
-pub mod endpoints;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
