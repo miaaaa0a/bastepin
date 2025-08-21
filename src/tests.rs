@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::*;
-    use std::sync::{LazyLock, Mutex, MutexGuard};
+    use std::sync::{LazyLock, Mutex};
     use std::time::Instant;
 
     static DB_PATH: &str = "./teststorage";
