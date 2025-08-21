@@ -1,14 +1,18 @@
 use askama::Template;
 use axum::{
-    Json,
-    extract::{self, Path, State},
-    response::Html,
+    extract::{self, Path, State}, http::StatusCode, response::{Html, IntoResponse}, Json
 };
 use serde::{Deserialize, Serialize};
 use crate::{
     storage::Storage,
     encoding
 };
+
+macro_rules! html {
+    ($p: expr) => {
+        std::fs::read_to_string($p).expect("error while reading html file")
+    };
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Response {
@@ -22,27 +26,37 @@ struct UploadTemplate {
     content: String,
 }
 
-macro_rules! html {
-    ($p: expr) => {
-        std::fs::read_to_string($p).unwrap()
-    };
+#[derive(Debug)]
+pub enum AppError {
+    Read,
+    Write
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> axum::response::Response {
+        match self {
+            AppError::Read => (StatusCode::INTERNAL_SERVER_ERROR, Html(html!("./templates/error.html"))).into_response(),
+            AppError::Write => (StatusCode::INTERNAL_SERVER_ERROR, Json(Response { code: 500, content: "error while writing".to_string()})).into_response()
+        }
+    }
 }
 
 const UPLOAD_LIMIT: usize = 1_048_576;
 pub const DB_PATH: &str = "./storage";
 
 #[axum::debug_handler]
-pub async fn get_by_hash(State(state): State<Storage>, Path(hash): Path<String>) -> Html<String> {
-    let result = state.get(hash);
+pub async fn get_by_hash(State(state): State<Storage>, Path(hash): Path<String>) -> Result<Html<String>, AppError> {
+    let result = state.get(hash).map_err(|_e| AppError::Read)?;
 
-    if let Ok(Some(x)) = result {
-        let content = str::from_utf8(&x).unwrap();
+    if let Some(x) = result {
+        let content = str::from_utf8(&x).map_err(|_e| AppError::Read)?;
         let html = UploadTemplate {
             content: content.to_string(),
         };
-        Html(html.render().unwrap())
+        let rendered = html.render().map_err(|_e| AppError::Read)?;
+        Ok(Html(rendered))
     } else {
-        Html(html!("./templates/error.html"))
+        Ok(Html(html!("./templates/error.html")))
     }
 }
 
@@ -50,28 +64,22 @@ pub async fn get_by_hash(State(state): State<Storage>, Path(hash): Path<String>)
 pub async fn upload(
     State(state): State<Storage>,
     extract::Json(payload): extract::Json<Response>,
-) -> Json<Response> {
+) -> Result<Json<Response>, AppError> {
     if payload.content.len() > UPLOAD_LIMIT {
-        return Json(Response {
+        return Ok(Json(Response {
             code: 413,
             content: format!(
                 "upload too big! {} >>> {} bytes",
                 payload.content.len(),
                 UPLOAD_LIMIT
             ),
-        });
+        }));
     }
 
-    let encoded = encoding::encode(&payload.content).unwrap();
-    let result = state.write(&encoded);
-    match result {
-        Ok(h) => Json(Response {
-            code: 200,
-            content: h,
-        }),
-        Err(e) => Json(Response {
-            code: 502,
-            content: format!("error while writing to db: {:?}", e),
-        }),
-    }
+    let encoded = encoding::encode(&payload.content).map_err(|_e| AppError::Write)?;
+    let result = state.write(&encoded).map_err(|_e| AppError::Write)?;
+    Ok(Json(Response {
+        code: 200,
+        content: result,
+    }))
 }
