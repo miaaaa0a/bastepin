@@ -6,7 +6,7 @@ use axum::{
 };
 use std::error::Error;
 use tower_http::services::ServeDir;
-pub mod encoding;
+
 pub mod endpoints;
 pub mod storage;
 pub mod tests;

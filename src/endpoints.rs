@@ -1,4 +1,4 @@
-use crate::{encoding, storage::Storage};
+use crate::storage::Storage;
 use askama::Template;
 use axum::{
     Json,
@@ -89,9 +89,8 @@ pub async fn upload(
             ),
         }));
     }
-
-    let encoded = encoding::encode(&payload.content).map_err(|_e| AppError::Write)?;
-    let result = state.write(&encoded).map_err(|_e| AppError::Write)?;
+    
+    let result = state.write(&payload.content).map_err(|_e| AppError::Write)?;
     Ok(Json(Response {
         code: 200,
         content: result,
